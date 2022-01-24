@@ -7,16 +7,6 @@ from rdkit.Chem import Draw
 from rdkit.Chem import AllChem
 import hydralit_components as hc
 
-#test2
-#test
-# @st.cache(allow_output_mutation=True)
-# def smile_models():
-#     return {}
-
-# @st.cache(allow_output_mutation=True, hash_funcs={set: lambda _: None})
-# def smile_strings():
-#     return []
-
 st.set_page_config(layout='wide',initial_sidebar_state='collapsed',)
 
 menu_data = [
@@ -43,9 +33,13 @@ ss = SessionState.get(smile_models={}, smile_strings=[])
 def get_pymol_style(style):
     return style
 
-pymol_style = st.selectbox('Select 3D Style', ('stick','line','sphere'))
+styles = ('stick', 'sphere')
+pymol_style = st.selectbox('Select 3D Style', styles)
 
-def create_models(smi, style=get_pymol_style(pymol_style)):
+def make_html_name(style):
+    return "viz_" + style + ".html"
+
+def create_models(smi, style):
     mol = Chem.MolFromSmiles(smi)
     mol = Chem.AddHs(mol)
     AllChem.EmbedMolecule(mol)
@@ -58,7 +52,8 @@ def create_models(smi, style=get_pymol_style(pymol_style)):
     view.show()
     view.render()
     t = view.js()
-    f = open('viz.html', 'w')
+    html_name = make_html_name(style)
+    f = open(html_name, 'w')
     f.write(t.startjs)
     f.write(t.endjs)
     f.close()
@@ -71,13 +66,17 @@ def add_smiles(input_smiles):
         input_smiles (str): The string input of a smile provided by the user
     """
     m = Chem.MolFromSmiles(input_smiles)
-    create_models(input_smiles)
-    HtmlFile = open("viz.html", 'r', encoding='utf-8')
-    source_code = HtmlFile.read()
+    if input_smiles in ss.smile_strings:
+        return
     
-    if input_smiles not in ss.smile_strings:
-        ss.smile_strings.append(input_smiles)
-        ss.smile_models[input_smiles] = (m, source_code)
+    ss.smile_strings.append(input_smiles)
+    ss.smile_models[input_smiles] = (m, {})
+    for style in styles:
+        create_models(input_smiles, style)
+        html_name = make_html_name(style)
+        HtmlFile = open(html_name, 'r', encoding='utf-8')
+        source_code = HtmlFile.read()
+        ss.smile_models[input_smiles][1][style] = source_code
 
 def display_smiles(first_smile, second_smile):
     
@@ -86,7 +85,7 @@ def display_smiles(first_smile, second_smile):
         Draw.MolToFile(ss.smile_models[first_smile][0], 'mol.png')
         st.image('mol.png')
     with c2:
-        components.html(ss.smile_models[first_smile][1],height=450,width=450)
+        components.html(ss.smile_models[first_smile][1][pymol_style],height=450,width=450)
     
     # print("first:", first_smile, "\tsecond:", second_smile)
     
@@ -98,7 +97,7 @@ def display_smiles(first_smile, second_smile):
         Draw.MolToFile(ss.smile_models[second_smile][0], 'mol2.png')
         st.image('mol2.png')
     with c2:
-        components.html(ss.smile_models[second_smile][1], height=450,width=450)
+        components.html(ss.smile_models[second_smile][1][pymol_style], height=450,width=450)
 
 input_smiles=st.text_input('Enter SMILES string\nLeft click, hold, then move mouse to rotate 3D view. \
                             Right click, hold then move mouse to zoom in/out.',\
