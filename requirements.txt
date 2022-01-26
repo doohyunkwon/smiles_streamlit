@@ -1,6 +1,5 @@
 hydralit_components
 py3Dmol
-rdkit
 rdkit_pypi
 streamlit==1.3.1
 streamlit_multipage
