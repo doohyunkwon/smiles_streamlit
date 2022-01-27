@@ -36,7 +36,7 @@ menu_id = hc.nav_bar(
     sticky_mode='pinned', #jumpy or not-jumpy, but sticky or pinned
 )
 
-st.title('SMILES  + RDKit + Py3DMOL :smiley:')
+st.title('Visualize molecules in 3D')
 
 ss = SessionState.get(smile_models={}, smile_strings=[])
 
